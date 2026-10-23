@@ -1,0 +1,139 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+  // Imports internos sem extensão: ts-node (seed) e Jest resolvem direto para .ts.
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum QuestionType {
+  MCQ
+  DISCURSIVE
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+model Exam {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  description     String?
+  status          ExamStatus   @default(DRAFT)
+  opensAt         DateTime
+  closesAt        DateTime
+  durationMinutes Int
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  questions       Question[]
+  assignments     Assignment[]
+  submissions     Submission[]
+}
+
+model Question {
+  id          String       @id @default(uuid()) @db.Uuid
+  examId      String       @db.Uuid
+  order       Int
+  type        QuestionType
+  statement   String
+  codeSnippet String?
+  points      Float        @default(1)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options     Option[]
+  answerKey   AnswerKey?
+  answers     Answer[]
+
+  @@index([examId, order])
+}
+
+// Sem coluna isCorrect: a alternativa correta vive só em AnswerKey.
+model Option {
+  id              String      @id @default(uuid()) @db.Uuid
+  questionId      String      @db.Uuid
+  label           String
+  text            String
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerKeys      AnswerKey[]
+  selectedAnswers Answer[]
+
+  @@unique([questionId, label])
+}
+
+// Gabarito: tabela separada de Question, lida só por rotas de professor e pelo GradingModule.
+model AnswerKey {
+  id              String   @id @default(uuid()) @db.Uuid
+  questionId      String   @unique @db.Uuid
+  correctOptionId String?  @db.Uuid
+  expectedPoints  String?
+  rubric          String?
+  explanation     String?
+  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  correctOption   Option?  @relation(fields: [correctOptionId], references: [id], onDelete: SetNull)
+}
+
+model Assignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  examId    String   @db.Uuid
+  email     String
+  createdAt DateTime @default(now())
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, email])
+}
+
+model Submission {
+  id              String           @id @default(uuid()) @db.Uuid
+  examId          String           @db.Uuid
+  studentName     String
+  studentEmail    String
+  accessTokenHash String           @unique
+  status          SubmissionStatus @default(IN_PROGRESS)
+  startedAt       DateTime         @default(now())
+  expiresAt       DateTime
+  submittedAt     DateTime?
+  totalScore      Float?
+  exam            Exam             @relation(fields: [examId], references: [id], onDelete: Restrict)
+  answers         Answer[]
+
+  @@unique([examId, studentEmail])
+  @@index([status, expiresAt])
+}
+
+model Answer {
+  id               String     @id @default(uuid()) @db.Uuid
+  submissionId     String     @db.Uuid
+  questionId       String     @db.Uuid
+  selectedOptionId String?    @db.Uuid
+  text             String?
+  score            Float?
+  updatedAt        DateTime   @updatedAt
+  submission       Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  question         Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   Option?    @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([submissionId, questionId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actor     String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+}

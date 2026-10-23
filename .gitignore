@@ -1,0 +1,14 @@
+node_modules/
+dist/
+generated/
+.env
+.env.*
+!.env.example
+coverage/
+.pg-test/
+*.tsbuildinfo
+.pg-dev/
+
+# Documentos de planejamento (locais)
+PLANO.md
+Spec de Backend*.md
