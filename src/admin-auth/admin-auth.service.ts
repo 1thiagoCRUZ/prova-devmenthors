@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { verifyPassword } from '../common/utils/password';
 import { safeEqual } from '../common/utils/token';
 
 const ADMIN_ROLE = 'TEACHER';
@@ -14,6 +15,13 @@ export class AdminAuthService {
 
   isValidKey(key: string): boolean {
     return safeEqual(key, this.config.getOrThrow<string>('ADMIN_KEY'));
+  }
+
+  /** Sempre roda as duas checagens, para o tempo de resposta não revelar se o usuário existe. */
+  async isValidCredentials(username: string, password: string): Promise<boolean> {
+    const userOk = safeEqual(username, this.config.getOrThrow<string>('ADMIN_USERNAME'));
+    const passwordOk = await verifyPassword(password, this.config.getOrThrow<string>('ADMIN_PASSWORD_HASH'));
+    return userOk && passwordOk;
   }
 
   async issueToken(): Promise<{ accessToken: string; expiresIn: number }> {

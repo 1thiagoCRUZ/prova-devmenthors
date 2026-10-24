@@ -108,11 +108,18 @@ describe('API de provas (e2e)', () => {
       await request(http).get('/exams').set('x-admin-key', 'errada').expect(401);
     });
 
-    it('POST /admin/login troca a chave por um JWT', async () => {
-      await request(http).post('/admin/login').send({ key: 'errada' }).expect(401);
+    it('POST /admin/login troca usuário e senha por um JWT', async () => {
+      const password = process.env.TEST_ADMIN_PASSWORD as string;
+      await request(http)
+        .post('/admin/login')
+        .send({ username: 'professor', password: 'errada' })
+        .expect(401);
+      await request(http).post('/admin/login').send({ username: 'outro', password }).expect(401);
+      // A chave de automação não serve como senha do painel.
+      await request(http).post('/admin/login').send({ key: process.env.ADMIN_KEY }).expect(400);
       const res = await request(http)
         .post('/admin/login')
-        .send({ key: process.env.ADMIN_KEY })
+        .send({ username: 'professor', password })
         .expect(200);
       expect(res.body.accessToken).toEqual(expect.any(String));
 

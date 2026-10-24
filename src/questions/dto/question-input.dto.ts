@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsEnum,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -16,6 +17,29 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { QuestionType } from '../../../generated/prisma/client';
+
+/**
+ * Linguagens aceitas em `codeLanguage` (nomes usados pelos highlighters, ex.: highlight.js/Shiki).
+ * `statement` e `options[].text` são Markdown: código inline entre crases e blocos
+ * cercados com a linguagem (```php). Veja docs/FRONTEND.md.
+ */
+export const CODE_LANGUAGES = [
+  'php',
+  'sql',
+  'html',
+  'css',
+  'javascript',
+  'typescript',
+  'json',
+  'python',
+  'java',
+  'c',
+  'cpp',
+  'csharp',
+  'bash',
+  'plaintext',
+] as const;
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
 
 export class OptionInputDto {
   @IsString()
@@ -69,6 +93,11 @@ export class CreateQuestionDto {
   @MaxLength(20000)
   codeSnippet?: string;
 
+  /** `null` (na edição) remove a linguagem. */
+  @IsOptional()
+  @IsIn(CODE_LANGUAGES)
+  codeLanguage?: CodeLanguage | null;
+
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
@@ -106,6 +135,11 @@ export class UpdateQuestionDto {
   @IsString()
   @MaxLength(20000)
   codeSnippet?: string;
+
+  /** `null` (na edição) remove a linguagem. */
+  @IsOptional()
+  @IsIn(CODE_LANGUAGES)
+  codeLanguage?: CodeLanguage | null;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })

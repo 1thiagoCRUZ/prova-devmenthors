@@ -17,6 +17,7 @@ export class StudentQuestionDto {
   @Expose() type: 'MCQ' | 'DISCURSIVE';
   @Expose() statement: string;
   @Expose() codeSnippet: string | null;
+  @Expose() codeLanguage: string | null;
   @Expose() points: number;
 
   @Expose()

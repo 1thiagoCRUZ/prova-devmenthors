@@ -2,9 +2,11 @@ import { execSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { rmSync } from 'node:fs';
 import EmbeddedPostgres from 'embedded-postgres';
+import { hashPassword } from '../src/common/utils/password';
 
 const PORT = 5434;
 const DATA_DIR = './.pg-test';
+const TEST_ADMIN_PASSWORD = randomBytes(12).toString('base64url');
 
 /** Sobe um PostgreSQL descartável, aplica as migrations e exporta as env vars do app. */
 export default async function globalSetup() {
@@ -30,6 +32,9 @@ export default async function globalSetup() {
     // Precisa ser setada: senão o prisma.config.ts pegaria a DIRECT_URL do .env (ex.: Neon).
     DIRECT_URL: testUrl,
     ADMIN_KEY: randomBytes(32).toString('hex'),
+    ADMIN_USERNAME: 'professor',
+    ADMIN_PASSWORD_HASH: await hashPassword(TEST_ADMIN_PASSWORD),
+    TEST_ADMIN_PASSWORD,
     JWT_SECRET: randomBytes(32).toString('hex'),
     ADMIN_TOKEN_TTL_MINUTES: '5',
     CORS_ORIGIN: 'http://localhost:5173',

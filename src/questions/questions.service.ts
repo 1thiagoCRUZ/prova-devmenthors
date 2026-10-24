@@ -37,6 +37,7 @@ export class QuestionsService {
         type: true,
         statement: true,
         codeSnippet: true,
+        codeLanguage: true,
         points: true,
         options: {
           select: { id: true, label: true, text: true },
@@ -70,6 +71,7 @@ export class QuestionsService {
           type: dto.type,
           statement: dto.statement,
           codeSnippet: dto.codeSnippet,
+          codeLanguage: dto.codeLanguage,
           points: dto.points,
           options: dto.options ? { create: dto.options } : undefined,
         },
@@ -119,6 +121,7 @@ export class QuestionsService {
           order: dto.order,
           statement: dto.statement,
           codeSnippet: dto.codeSnippet,
+          codeLanguage: dto.codeLanguage,
           points: dto.points,
         },
       });

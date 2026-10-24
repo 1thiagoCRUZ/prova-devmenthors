@@ -39,12 +39,20 @@ npm run test:e2e  # e2e contra um Postgres real descartável (embedded-postgres,
 
 ## Endpoints
 
-Professor: header `x-admin-key: <ADMIN_KEY>` **ou** `Authorization: Bearer <token>` obtido em `POST /admin/login`.
+Professor: `POST /admin/login` com `{ username, password }` devolve um token → `Authorization: Bearer <token>`. Para scripts/automação, o header `x-admin-key: <ADMIN_KEY>` também vale.
+
+Definir ou trocar a senha do professor (grava só o hash scrypt no `.env`; reinicie a API depois):
+
+```bash
+npm run admin:password -- "sua senha forte"            # usuário "admin"
+npm run admin:password -- "sua senha forte" --user ana
+npm run admin:password                                 # gera uma senha aleatória e mostra uma vez
+```
 Aluno: cookie `exam_token` (httpOnly) emitido por `POST /exams/:id/start`, válido só para aquela prova.
 
 | Método | Rota | Quem | Descrição |
 | --- | --- | --- | --- |
-| POST | `/admin/login` | público | `{ key }` → `{ accessToken, expiresIn }` (5 req/min) |
+| POST | `/admin/login` | público | `{ username, password }` → `{ accessToken, expiresIn }` (5 req/min) |
 | POST | `/exams` | professor | Cria prova (`DRAFT`) |
 | PATCH | `/exams/:id` | professor | Edita / publica / encerra (`status`) |
 | GET | `/exams` | ambos | Professor: todas. Aluno: `?email=` → publicadas, na janela e atribuídas |
@@ -80,6 +88,28 @@ POST /exams/:id/questions
 ```
 
 Discursiva: `"type": "DISCURSIVE"`, sem `options`, e `answerKey` com `expectedPoints` / `rubric` opcionais.
+
+### Código nas questões
+
+- `statement` e `options[].text` são **Markdown mínimo**: só `` `código inline` ``, blocos cercados (` ```php ` … ` ``` `) e tabelas simples (`| a | b |` + linha `| --- | --- |`). Todo o resto é texto puro.
+- `codeSnippet` é o bloco principal da questão; `codeLanguage` diz a linguagem (`php`, `sql`, `html`, `css`, `javascript`, `typescript`, `json`, `python`, `java`, `c`, `cpp`, `csharp`, `bash`, `plaintext`) para o syntax highlight.
+- O front renderiza isso com `RichText`/`CodeBlock` (highlight.js), sem HTML cru.
+
+### Importar uma prova de um JSON
+
+```bash
+npm run import:exam -- provas/minha-prova.json
+```
+
+Formato: `{ "exam": { title, description?, durationMinutes }, "questions": [CreateQuestionDto...] }`. A prova entra como `DRAFT` com janela provisória (agora → +7 dias); ajuste datas, duração e pontos no painel e publique. Passa pelos mesmos services/validações da API. A pasta `provas/` está no `.gitignore` porque contém gabarito.
+
+Para corrigir questões de uma prova já importada (enquanto ninguém começou), edite o JSON e rode:
+
+```bash
+npm run sync:exam -- <examId> provas/minha-prova.json
+```
+
+Casa as questões pela `order` e atualiza enunciado, código, alternativas e gabarito, sem mexer em datas, duração, status ou pontos.
 
 ## Regras importantes
 

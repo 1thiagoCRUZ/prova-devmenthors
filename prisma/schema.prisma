@@ -49,6 +49,8 @@ model Question {
   type        QuestionType
   statement   String
   codeSnippet String?
+  // Linguagem do codeSnippet (php, sql, html...), para o front aplicar syntax highlight.
+  codeLanguage String?
   points      Float        @default(1)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

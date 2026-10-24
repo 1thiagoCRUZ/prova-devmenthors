@@ -16,9 +16,9 @@ export class AdminAuthController {
   @HttpCode(200)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async login(@Body() dto: AdminLoginDto, @Req() req: AppRequest) {
-    if (!this.auth.isValidKey(dto.key)) {
-      await this.audit.log('anonymous', 'admin.login_failed', { ip: req.ip });
-      throw new UnauthorizedException('Chave de administrador inválida');
+    if (!(await this.auth.isValidCredentials(dto.username, dto.password))) {
+      await this.audit.log('anonymous', 'admin.login_failed', { ip: req.ip, username: dto.username });
+      throw new UnauthorizedException('Usuário ou senha inválidos');
     }
     await this.audit.log('admin', 'admin.login', { ip: req.ip });
     return this.auth.issueToken();

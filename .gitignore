@@ -12,3 +12,9 @@ coverage/
 # Documentos de planejamento (locais)
 PLANO.md
 Spec de Backend*.md
+
+# Provas com gabarito (não versionar)
+provas/
+
+# Senha de admin gerada localmente
+.admin-password.local

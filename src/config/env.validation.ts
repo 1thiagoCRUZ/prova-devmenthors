@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -23,9 +24,20 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   DATABASE_URL: string;
 
+  /** Chave para automação (header x-admin-key). O login do painel usa usuário/senha. */
   @IsString()
   @MinLength(32)
   ADMIN_KEY: string;
+
+  @IsString()
+  @MinLength(3)
+  ADMIN_USERNAME: string;
+
+  /** Gerado por `npm run admin:password`. Nunca a senha em texto puro. */
+  @Matches(/^scrypt\$\d+\$\d+\$\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+$/, {
+    message: 'ADMIN_PASSWORD_HASH inválido: gere com npm run admin:password',
+  })
+  ADMIN_PASSWORD_HASH: string;
 
   @IsString()
   @MinLength(32)

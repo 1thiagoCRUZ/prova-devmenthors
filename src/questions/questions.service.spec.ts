@@ -4,7 +4,16 @@ import { QuestionsService } from './questions.service';
  * Contrato da rota de aluno: se este teste quebrar, algum campo novo está
  * saindo para o aluno. Só altere a lista abaixo de forma consciente.
  */
-const STUDENT_QUESTION_KEYS = ['codeSnippet', 'id', 'options', 'order', 'points', 'statement', 'type'];
+const STUDENT_QUESTION_KEYS = [
+  'codeLanguage',
+  'codeSnippet',
+  'id',
+  'options',
+  'order',
+  'points',
+  'statement',
+  'type',
+];
 const STUDENT_OPTION_KEYS = ['id', 'label', 'text'];
 
 describe('QuestionsService.findForStudent', () => {
@@ -34,6 +43,7 @@ describe('QuestionsService.findForStudent', () => {
         type: 'MCQ',
         statement: 'Quanto é 2+2?',
         codeSnippet: null,
+        codeLanguage: null,
         points: 1,
         createdAt: new Date(),
         answerKey: { correctOptionId: 'o2', rubric: 'segredo', explanation: 'porque sim' },
