@@ -9,12 +9,14 @@ import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Spinner } from "@/components/ui/Spinner";
 import { isApiError } from "@/lib/api-client";
+import { cn } from "@/lib/cn";
 import { clearExamDrafts, draftKeyFor, readDrafts } from "@/lib/drafts";
 import { seededShuffle } from "@/lib/shuffle";
 import { broadcastExamEvent } from "@/lib/exam-channel";
 import { submitExam, terminalReasonOf, type TerminalReason } from "@/lib/student-api";
 import type { ExamSession, StudentQuestion } from "@/lib/types";
 import { useAutosave, type SaveState } from "@/lib/use-autosave";
+import { useExamGuard } from "@/lib/use-exam-guard";
 import { AnswerCard } from "./AnswerCard";
 import { QuestionDiscursive } from "./QuestionDiscursive";
 import { QuestionMCQ } from "./QuestionMCQ";
@@ -144,157 +146,183 @@ export function ExamForm({ examId, session, clockOffset, onTerminal, onTimeElaps
 
   const answerCardDesktopId = useId();
   const answerCardMobileId = useId();
+  const shielded = useExamGuard();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-paper-sunken">
-      {/* Faixa de tinta: o "relógio da sala". */}
-      <header className="sticky top-0 z-20 bg-ink text-on-ink shadow-[0_1px_0_rgb(0_0_0/0.2)]">
-        <div className="mx-auto flex h-20 max-w-[100rem] items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="min-w-0">
-            <p className="truncate text-lg font-bold sm:text-xl">{exam.title}</p>
-            <HeaderSaveStatus state={overall} />
+    <>
+      {shielded ? <ExamShield /> : null}
+      <div
+        data-exam-protected
+        aria-hidden={shielded || undefined}
+        className={cn("flex min-h-dvh flex-col bg-paper-sunken select-none", shielded && "invisible")}
+      >
+        {/* Faixa de tinta: o "relógio da sala". */}
+        <header className="sticky top-0 z-20 bg-ink text-on-ink shadow-[0_1px_0_rgb(0_0_0/0.2)]">
+          <div className="mx-auto flex h-20 max-w-[100rem] items-center justify-between gap-4 px-4 sm:px-6">
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold sm:text-xl">{exam.title}</p>
+              <HeaderSaveStatus state={overall} />
+            </div>
+            <Timer expiresAt={submission.expiresAt} clockOffset={clockOffset} onExpire={onTimeElapsed} />
           </div>
-          <Timer expiresAt={submission.expiresAt} clockOffset={clockOffset} onExpire={onTimeElapsed} />
-        </div>
-        <div className="mx-auto flex max-w-[100rem] items-center gap-3 px-4 pb-4 sm:px-6">
-          <ProgressBar
-            tone="on-ink"
-            value={answeredCount}
-            max={questions.length}
-            label="Questões respondidas"
-            className="flex-1"
-          />
-          <span className="shrink-0 text-sm font-medium text-on-ink-muted tabular-nums">
-            {answeredCount}/{questions.length} respondidas
-          </span>
-        </div>
-      </header>
+          <div className="mx-auto flex max-w-[100rem] items-center gap-3 px-4 pb-4 sm:px-6">
+            <ProgressBar
+              tone="on-ink"
+              value={answeredCount}
+              max={questions.length}
+              label="Questões respondidas"
+              className="flex-1"
+            />
+            <span className="shrink-0 text-sm font-medium text-on-ink-muted tabular-nums">
+              {answeredCount}/{questions.length} respondidas
+            </span>
+          </div>
+        </header>
 
-      {verifyingTime ? (
-        <div role="status" className="bg-danger-soft text-ink">
-          <p className="mx-auto flex max-w-[100rem] items-center gap-2 px-4 py-3 text-base font-medium sm:px-6">
-            <Spinner /> O tempo acabou. Conferindo com o servidor…
-          </p>
-        </div>
-      ) : null}
+        {verifyingTime ? (
+          <div role="status" className="bg-danger-soft text-ink">
+            <p className="mx-auto flex max-w-[100rem] items-center gap-2 px-4 py-3 text-base font-medium sm:px-6">
+              <Spinner /> O tempo acabou. Conferindo com o servidor…
+            </p>
+          </div>
+        ) : null}
 
-      <div className="mx-auto grid w-full max-w-[100rem] flex-1 gap-8 px-4 pt-6 pb-32 sm:px-6 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:pb-16">
-        <main className="flex min-w-0 flex-col gap-5">
-          {initial.savedCount > 0 || Object.keys(initial.drafts).length > 0 ? (
-            <Notice tone="info" title="Você retomou a prova">
-              {initial.savedCount > 0
-                ? `${initial.savedCount} ${initial.savedCount === 1 ? "resposta já estava salva" : "respostas já estavam salvas"}.`
-                : null}{" "}
-              {Object.keys(initial.drafts).length > 0
-                ? "Respostas que ainda não tinham sido salvas antes de recarregar foram recuperadas e estão sendo enviadas."
-                : null}
+        <div className="mx-auto grid w-full max-w-[100rem] flex-1 gap-8 px-4 pt-6 pb-32 sm:px-6 sm:pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:pb-16">
+          <main className="flex min-w-0 flex-col gap-5">
+            {initial.savedCount > 0 || Object.keys(initial.drafts).length > 0 ? (
+              <Notice tone="info" title="Você retomou a prova">
+                {initial.savedCount > 0
+                  ? `${initial.savedCount} ${initial.savedCount === 1 ? "resposta já estava salva" : "respostas já estavam salvas"}.`
+                  : null}{" "}
+                {Object.keys(initial.drafts).length > 0
+                  ? "Respostas que ainda não tinham sido salvas antes de recarregar foram recuperadas e estão sendo enviadas."
+                  : null}
+              </Notice>
+            ) : null}
+
+            <p className="text-sm text-ink-muted">
+              Copiar, colar, imprimir e capturar a tela ficam bloqueados. Se você sair desta janela, a prova fica oculta
+              até você voltar — o tempo continua correndo.
+            </p>
+
+            {exam.description ? (
+              <p className="rounded-2xl border border-line bg-paper-raised p-5 text-[1.0625rem] leading-relaxed whitespace-pre-wrap text-ink-soft sm:px-8">{exam.description}</p>
+            ) : null}
+
+            <div className="flex flex-col gap-5">
+              {questions.map((question, index) => (
+                <QuestionItem
+                  key={question.id}
+                  question={question}
+                  number={index + 1}
+                  value={answers[question.id] ?? null}
+                  saveState={autosave.states[question.id]}
+                  disabled={locked}
+                  onChange={(value) => setAnswer(question.id, value)}
+                />
+              ))}
+            </div>
+
+            <section aria-labelledby={answerCardMobileId} className="rounded-2xl border border-line bg-paper-raised p-5 sm:p-8 lg:hidden">
+              <AnswerCard
+                headingId={answerCardMobileId}
+                questions={questions}
+                isAnswered={isAnswered}
+                saveStates={autosave.states}
+              />
+              <Button size="lg" className="mt-5 w-full" disabled={locked} onClick={() => setConfirmOpen(true)}>
+                Revisar e enviar
+              </Button>
+            </section>
+          </main>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-36 flex flex-col gap-5 rounded-2xl border border-line bg-paper-raised p-6">
+              <AnswerCard
+                headingId={answerCardDesktopId}
+                questions={questions}
+                isAnswered={isAnswered}
+                saveStates={autosave.states}
+              />
+              <Button size="lg" className="w-full" disabled={locked} onClick={() => setConfirmOpen(true)}>
+                Revisar e enviar
+              </Button>
+            </div>
+          </aside>
+        </div>
+
+        {/* Barra fixa no celular: progresso + envio sempre à mão. */}
+        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+            <span className="text-base text-ink-soft tabular-nums">
+              <strong className="font-semibold text-ink">{answeredCount}</strong> de {questions.length} respondidas
+            </span>
+            <Button size="lg" disabled={locked} onClick={() => setConfirmOpen(true)}>
+              Enviar prova
+            </Button>
+          </div>
+        </div>
+
+        <Modal
+          open={confirmOpen}
+          busy={submitting}
+          onClose={() => {
+            setConfirmOpen(false);
+            setSubmitError(null);
+          }}
+          title="Enviar a prova?"
+          description={
+            <>
+              <p>
+                Você respondeu <strong className="text-ink tabular-nums">{answeredCount}</strong> de{" "}
+                <span className="tabular-nums">{questions.length}</span> questões.
+              </p>
+              <p className="mt-2">
+                <strong className="font-medium text-ink">O envio é definitivo:</strong> depois dele não dá para alterar
+                nenhuma resposta.
+              </p>
+            </>
+          }
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                autoFocus
+                disabled={submitting}
+                onClick={() => {
+                  setConfirmOpen(false);
+                  setSubmitError(null);
+                }}
+              >
+                Voltar à prova
+              </Button>
+              <Button loading={submitting} loadingLabel="Enviando…" onClick={confirmSubmit}>
+                Enviar definitivamente
+              </Button>
+            </>
+          }
+        >
+          {blank.length > 0 ? (
+            <Notice tone="warn" title={blank.length === 1 ? "1 questão em branco" : `${blank.length} questões em branco`}>
+              Questões {blank.map(({ n }) => n).join(", ")}.
             </Notice>
           ) : null}
-
-          {exam.description ? (
-            <p className="rounded-2xl border border-line bg-paper-raised p-5 text-[1.0625rem] leading-relaxed whitespace-pre-wrap text-ink-soft sm:px-8">{exam.description}</p>
-          ) : null}
-
-          <div className="flex flex-col gap-5">
-            {questions.map((question, index) => (
-              <QuestionItem
-                key={question.id}
-                question={question}
-                number={index + 1}
-                value={answers[question.id] ?? null}
-                saveState={autosave.states[question.id]}
-                disabled={locked}
-                onChange={(value) => setAnswer(question.id, value)}
-              />
-            ))}
-          </div>
-
-          <section aria-labelledby={answerCardMobileId} className="rounded-2xl border border-line bg-paper-raised p-5 sm:p-8 lg:hidden">
-            <AnswerCard
-              headingId={answerCardMobileId}
-              questions={questions}
-              isAnswered={isAnswered}
-              saveStates={autosave.states}
-            />
-            <Button size="lg" className="mt-5 w-full" disabled={locked} onClick={() => setConfirmOpen(true)}>
-              Revisar e enviar
-            </Button>
-          </section>
-        </main>
-
-        <aside className="hidden lg:block">
-          <div className="sticky top-36 flex flex-col gap-5 rounded-2xl border border-line bg-paper-raised p-6">
-            <AnswerCard
-              headingId={answerCardDesktopId}
-              questions={questions}
-              isAnswered={isAnswered}
-              saveStates={autosave.states}
-            />
-            <Button size="lg" className="w-full" disabled={locked} onClick={() => setConfirmOpen(true)}>
-              Revisar e enviar
-            </Button>
-          </div>
-        </aside>
+          {submitError ? <Notice tone="danger">{submitError}</Notice> : null}
+        </Modal>
       </div>
+    </>
+  );
+}
 
-      {/* Barra fixa no celular: progresso + envio sempre à mão. */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-paper-raised/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <span className="text-base text-ink-soft tabular-nums">
-            <strong className="font-semibold text-ink">{answeredCount}</strong> de {questions.length} respondidas
-          </span>
-          <Button size="lg" disabled={locked} onClick={() => setConfirmOpen(true)}>
-            Enviar prova
-          </Button>
-        </div>
+function ExamShield() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink px-6 text-center text-on-ink">
+      <div className="max-w-md">
+        <p className="text-2xl font-bold">Prova oculta</p>
+        <p className="mt-3 text-lg text-on-ink-muted">
+          Volte para esta janela para continuar. O tempo continua correndo e suas respostas estão salvas.
+        </p>
       </div>
-
-      <Modal
-        open={confirmOpen}
-        busy={submitting}
-        onClose={() => {
-          setConfirmOpen(false);
-          setSubmitError(null);
-        }}
-        title="Enviar a prova?"
-        description={
-          <>
-            <p>
-              Você respondeu <strong className="text-ink tabular-nums">{answeredCount}</strong> de{" "}
-              <span className="tabular-nums">{questions.length}</span> questões.
-            </p>
-            <p className="mt-2">
-              <strong className="font-medium text-ink">O envio é definitivo:</strong> depois dele não dá para alterar
-              nenhuma resposta.
-            </p>
-          </>
-        }
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              autoFocus
-              disabled={submitting}
-              onClick={() => {
-                setConfirmOpen(false);
-                setSubmitError(null);
-              }}
-            >
-              Voltar à prova
-            </Button>
-            <Button loading={submitting} loadingLabel="Enviando…" onClick={confirmSubmit}>
-              Enviar definitivamente
-            </Button>
-          </>
-        }
-      >
-        {blank.length > 0 ? (
-          <Notice tone="warn" title={blank.length === 1 ? "1 questão em branco" : `${blank.length} questões em branco`}>
-            Questões {blank.map(({ n }) => n).join(", ")}.
-          </Notice>
-        ) : null}
-        {submitError ? <Notice tone="danger">{submitError}</Notice> : null}
-      </Modal>
     </div>
   );
 }

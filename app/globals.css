@@ -174,3 +174,17 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Tela de prova: texto não selecionável, mas os campos continuam editáveis
+   (no Safari/iOS, user-select: none herdado impede digitar). */
+[data-exam-protected] :is(input, textarea) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Imprimir/salvar como PDF não mostra a prova. */
+@media print {
+  [data-exam-protected] {
+    display: none !important;
+  }
+}
