@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+/*
+ * Paleta azul, branco e preto. A faixa preta do topo (relógio da sala) é o
+ * elemento forte da tela; as alternativas são bolhas de cartão-resposta
+ * preenchidas de azul.
+ */
+@theme {
+  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
+  --font-display: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+
+  --color-paper: #ffffff;
+  --color-paper-raised: #ffffff;
+  --color-paper-sunken: #f1f3f6;
+  --color-line: #e1e4ea;
+  --color-line-strong: #aeb5c2;
+
+  --color-ink: #0a0b0f;
+  --color-ink-soft: #3d4350;
+  --color-ink-muted: #5a6170;
+
+  --color-pen: #1d4ed8;
+  --color-pen-hover: #1e40af;
+  --color-pen-soft: #e8efff;
+
+  --color-ok: #1e6b3a;
+  --color-ok-soft: #e1efe4;
+  --color-warn: #8a5300;
+  --color-warn-soft: #f6ead2;
+  --color-danger: #b42318;
+  --color-danger-soft: #f8e1dd;
+
+  /* Variações para fundo escuro (faixa do relógio) */
+  --color-on-ink: #ffffff;
+  --color-on-ink-muted: #a9b0bd;
+  --color-warn-on-ink: #f5b54a;
+  --color-danger-on-ink: #ff9a8a;
+
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+
+  --shadow-sheet: 0 1px 0 rgb(23 24 28 / 0.04), 0 8px 24px -12px rgb(23 24 28 / 0.18);
+
+  --animate-skeleton: skeleton 1.6s ease-in-out infinite;
+  --animate-spin-slow: spin 0.9s linear infinite;
+  --animate-fade-in: fade-in 180ms ease-out both;
+  --animate-pop: pop 160ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+
+  @keyframes skeleton {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pop {
+    from {
+      transform: scale(0.6);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-pen-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-pen);
+    outline-offset: 2px;
+  }
+
+  dialog::backdrop {
+    background: rgb(23 24 28 / 0.55);
+  }
+}
+
+/*
+ * Syntax highlight (highlight.js) sobre o fundo --color-ink. Cores claras,
+ * todas com contraste >= 7:1 no preto, puxando para o azul da paleta.
+ * Fora de @layer de propósito: as classes .hljs-* só existem em runtime e o
+ * Tailwind descartaria regras de @layer components que não vê no código-fonte.
+ */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-meta .hljs-keyword {
+  color: #8fb3ff;
+  font-weight: 500;
+}
+.hljs-literal,
+.hljs-number,
+.hljs-symbol {
+  color: #f5b54a;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-attr,
+.hljs-attribute {
+  color: #9fe0a8;
+}
+.hljs-variable,
+.hljs-template-variable,
+.hljs-params {
+  color: #e6ebff;
+}
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: #7fdcff;
+}
+.hljs-type,
+.hljs-title.class_ {
+  color: #c7a6ff;
+}
+.hljs-tag,
+.hljs-name {
+  color: #8fb3ff;
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: #a9b0bd;
+}
+.hljs-comment {
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  dialog[open] {
+    animation: var(--animate-fade-in);
+  }
+}
+
+/* Com redução de movimento: nada gira, pulsa ou desliza; mostra o estado final. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
