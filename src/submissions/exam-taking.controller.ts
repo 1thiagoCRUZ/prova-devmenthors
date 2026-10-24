@@ -30,7 +30,8 @@ export class ExamTakingController {
 
   @Post('start')
   @HttpCode(200)
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  // Sem token ainda: conta por IP, e pelo proxy do front a turma toda divide o mesmo IP.
+  @Throttle({ default: { limit: 120, ttl: 60_000 } })
   async start(
     @Param('id', ParseUUIDPipe) examId: string,
     @Body() dto: StartExamDto,
