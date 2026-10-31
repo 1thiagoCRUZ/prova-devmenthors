@@ -42,7 +42,19 @@ async function Submissions({ params }: { params: Promise<{ examId: string }> }) 
 
   return (
     <>
-      <PageHeader back={back} eyebrow="Submissões e relatório" title={exam.title} />
+      <PageHeader
+        back={back}
+        eyebrow="Submissões e relatório"
+        title={exam.title}
+        actions={
+          <Link
+            href={`/admin/provas/${examId}/duplas`}
+            className="inline-flex min-h-11 items-center justify-center rounded-control border border-line-strong bg-paper-raised px-4 text-[0.9375rem] font-medium text-ink transition-colors hover:border-ink"
+          >
+            Sortear duplas
+          </Link>
+        }
+      />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Fazendo agora" value={submissions.inProgress} />

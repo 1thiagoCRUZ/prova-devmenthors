@@ -69,6 +69,9 @@ async function ExamEditor({ params }: { params: Promise<{ examId: string }> }) {
             <Link href={`/admin/previa/${exam.id}`} className={secondaryLink}>
               Visualizar como aluno
             </Link>
+            <Link href={`/admin/provas/${exam.id}/corrigida`} className={secondaryLink}>
+              Prova corrigida
+            </Link>
             <Link href={`/admin/provas/${exam.id}/submissoes`} className={secondaryLink}>
               Submissões ({exam._count.submissions})
             </Link>
